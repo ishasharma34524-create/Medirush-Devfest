@@ -3,14 +3,31 @@ import { CheckCircle2, Loader2, Sparkles, FileSearch } from 'lucide-react';
 import { Card } from '../common/Card';
 import { ANALYSIS_STEPS } from '../../services/mockAiService';
 
+import { analyzePrescriptionApi } from '../../services/prescriptionService';
+import type { DemoPrescriptionData, ExtractedMedicine } from '../../types/prescription';
+
 interface AiAnalysisScreenProps {
-  onComplete: () => void;
+  uploadPayload?: File | 'demo';
+  onComplete: (data: { prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] }) => void;
 }
 
-export const AiAnalysisScreen: React.FC<AiAnalysisScreenProps> = ({ onComplete }) => {
+export const AiAnalysisScreen: React.FC<AiAnalysisScreenProps> = ({ 
+  uploadPayload = 'demo',
+  onComplete 
+}) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
+    let isCancelled = false;
+    let analysisResult: { prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] } | null = null;
+
+    // Trigger backend API call in parallel with the progressive UI animation
+    analyzePrescriptionApi(uploadPayload).then((res) => {
+      if (!isCancelled) {
+        analysisResult = res;
+      }
+    });
+
     const stepInterval = 320; // Fast and snappy (~1.6s total)
     const timer = setInterval(() => {
       setCurrentStep((prev) => {
@@ -19,15 +36,25 @@ export const AiAnalysisScreen: React.FC<AiAnalysisScreenProps> = ({ onComplete }
         } else {
           clearInterval(timer);
           setTimeout(() => {
-            onComplete();
+            if (!isCancelled && analysisResult) {
+              onComplete(analysisResult);
+            } else {
+              // Fallback if API was still resolving
+              analyzePrescriptionApi(uploadPayload).then((res) => {
+                if (!isCancelled) onComplete(res);
+              });
+            }
           }, 350);
           return prev;
         }
       });
     }, stepInterval);
 
-    return () => clearInterval(timer);
-  }, [onComplete]);
+    return () => {
+      isCancelled = true;
+      clearInterval(timer);
+    };
+  }, [onComplete, uploadPayload]);
 
   return (
     <div className="max-w-2xl mx-auto py-8 sm:py-14 px-4">
