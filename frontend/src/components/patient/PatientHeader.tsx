@@ -7,12 +7,14 @@ interface PatientHeaderProps {
   profile: PatientProfile;
   currentView: PatientView;
   onNavigate: (view: PatientView) => void;
+  onOpenChemistPortal?: () => void;
 }
 
 export const PatientHeader: React.FC<PatientHeaderProps> = ({
   profile,
   currentView,
   onNavigate,
+  onOpenChemistPortal,
 }) => {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
 
@@ -90,6 +92,15 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               >
                 Pharmacies
               </button>
+              {onOpenChemistPortal && (
+                <button
+                  onClick={onOpenChemistPortal}
+                  className="px-3 py-1.5 rounded-lg transition-colors cursor-pointer text-teal-700 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-200/80 flex items-center gap-1.5"
+                >
+                  <span>🏪 Chemist Station</span>
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                </button>
+              )}
             </nav>
           </div>
 

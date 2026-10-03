@@ -238,3 +238,79 @@ export const dispatchOrder = async (orderId: string): Promise<any> => {
     return order;
   }
 };
+
+/**
+ * Retrieves all active / live orders for chemist portal monitoring.
+ */
+export const getAllOrders = async (): Promise<any[]> => {
+  const list: any[] = [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const dbOrders = await Order.find().sort({ createdAt: -1 }).limit(20);
+      list.push(...dbOrders);
+    } catch {
+      // Fall through to in-memory orders
+    }
+  }
+
+  for (const [, order] of inMemoryOrders) {
+    if (!list.some((o) => String(o._id) === String(order._id))) {
+      list.push(order);
+    }
+  }
+
+  return list;
+};
+
+/**
+ * Handles partial confirmation by a chemist and cascades remaining medicines to the next nearest chemist.
+ */
+export const partialConfirmAndForwardOrder = async (
+  orderId: string,
+  pharmacyId: string,
+  acceptedMedicines: any[],
+  remainingMedicines: any[]
+): Promise<{ primaryOrder: any; forwardedOrder?: any; nextPharmacy?: any }> => {
+  let order = await getOrderById(orderId);
+  if (!order) {
+    throw new Error(`Order with ID ${orderId} not found`);
+  }
+
+  order.pharmacyId = pharmacyId;
+  order.medicines = acceptedMedicines;
+  order.status = OrderStatus.PHARMACY_ACCEPTED;
+
+  if (typeof order.save === "function") {
+    await order.save();
+  } else {
+    inMemoryOrders.set(orderId, order);
+  }
+
+  let forwardedOrder: any = null;
+  let nextPharmacy: any = null;
+
+  if (remainingMedicines && remainingMedicines.length > 0) {
+    const nextPharmacies = DEMO_PHARMACIES_LIST.filter(
+      (p) => String(p._id) !== String(pharmacyId)
+    );
+    nextPharmacy = nextPharmacies[0] || DEMO_PHARMACIES_LIST[1];
+
+    forwardedOrder = await createOrder({
+      patientId: order.patientId,
+      medicines: remainingMedicines,
+      deliveryLocation: order.deliveryLocation,
+      payout: 40,
+    });
+
+    forwardedOrder.status = OrderStatus.BROADCASTING;
+    forwardedOrder.pharmacyId = nextPharmacy?._id;
+    if (typeof forwardedOrder.save === "function") {
+      await forwardedOrder.save();
+    } else {
+      inMemoryOrders.set(String(forwardedOrder._id), forwardedOrder);
+    }
+  }
+
+  return { primaryOrder: order, forwardedOrder, nextPharmacy };
+};
+

@@ -135,7 +135,14 @@ export const broadcastOrderApi = async (
 };
 
 /**
- * Pharmacy confirms order
+ * Fetches all live orders for Chemist Portal
+ */
+export const fetchLiveOrdersApi = async (): Promise<any> => {
+  return apiRequest("orders");
+};
+
+/**
+ * Pharmacy confirms full order
  */
 export const confirmOrderApi = async (
   orderId: string,
@@ -144,6 +151,25 @@ export const confirmOrderApi = async (
   return apiRequest(`orders/${orderId}/confirm`, {
     method: "POST",
     body: JSON.stringify({ pharmacyId }),
+  });
+};
+
+/**
+ * Pharmacy confirms available medicines and cascades remaining to next nearest chemist
+ */
+export const partialConfirmOrderApi = async (
+  orderId: string,
+  pharmacyId: string,
+  acceptedMedicines: any[],
+  remainingMedicines: any[]
+): Promise<any> => {
+  return apiRequest(`orders/${orderId}/partial-confirm`, {
+    method: "POST",
+    body: JSON.stringify({
+      pharmacyId,
+      acceptedMedicines,
+      remainingMedicines,
+    }),
   });
 };
 

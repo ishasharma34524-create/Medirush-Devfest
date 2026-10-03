@@ -5,6 +5,7 @@ import { MedicineReview } from '../../components/prescription/MedicineReview';
 import { FindingMedicinesScreen } from '../../components/fulfillment/FindingMedicinesScreen';
 import { DEMO_PRESCRIPTION } from '../../data/patient/demoPrescription';
 import { createOrderFromFulfillment } from '../../services/orderService';
+import { createOrderApi, broadcastOrderApi } from '../../services/backendService';
 import type { ExtractedMedicine, PrescriptionStep, DemoPrescriptionData } from '../../types/prescription';
 import type { FulfillmentPlan } from '../../types/pharmacy';
 import type { ActiveOrder } from '../../types/patient';
@@ -62,6 +63,73 @@ export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({
 
   const handleConfirmOrder = (plan: FulfillmentPlan) => {
     const newOrder = createOrderFromFulfillment(medicines, plan);
+
+    // 1. Send live order to backend
+    createOrderApi({
+      patientId: 'patient_demo_101',
+      medicines: medicines.map((m) => ({
+        brandName: m.name,
+        salt: m.saltComposition,
+        strength: m.strength,
+        quantity: m.quantity,
+      })),
+      deliveryLocation: {
+        address: 'Flat 402, Green Glen Heights, Bellandur, Bengaluru',
+        latitude: 12.9352,
+        longitude: 77.6245,
+      },
+    })
+      .then((res) => {
+        if (res?.order?._id) {
+          broadcastOrderApi(res.order._id).catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend order creation notice:', err);
+      });
+
+    // 2. Broadcast to Chemist Portal live store
+    try {
+      const existingChemistOrders = JSON.parse(
+        localStorage.getItem('medirush_chemist_orders') || '[]'
+      );
+      const incomingOrderForChemist = {
+        id: newOrder.id,
+        orderNumber: newOrder.orderNumber,
+        patientName: 'Rahul Sharma',
+        patientPhone: '+91-98765-43210',
+        patientAddress: newOrder.deliveryAddress,
+        distanceKm: 1.2,
+        urgency: newOrder.hasColdChain ? 'CRITICAL_COLD_CHAIN' : 'HIGH_URGENCY',
+        timeReceived: 'Just now',
+        expirySeconds: 90,
+        totalAmount: newOrder.totalAmount,
+        payoutAmount: Math.round(newOrder.totalAmount * 0.9),
+        prescriptionDoctor: 'Dr. Arishta Mukherjee, MD (KMC-849102)',
+        medicines: medicines.map((m) => ({
+          id: m.id,
+          name: `${m.name} (${m.strength})`,
+          salt: m.saltComposition,
+          quantity: m.quantity,
+          inStock: true,
+          availableQty: 25,
+          unitPrice: m.unitPrice,
+          isColdChain: m.isColdChain,
+          scheduleType: m.isPrescriptionRequired ? 'Schedule H' : 'OTC',
+        })),
+      };
+
+      localStorage.setItem(
+        'medirush_chemist_orders',
+        JSON.stringify([incomingOrderForChemist, ...existingChemistOrders])
+      );
+      window.dispatchEvent(
+        new CustomEvent('medirush:new_order', { detail: incomingOrderForChemist })
+      );
+    } catch (e) {
+      console.warn('Chemist portal broadcast notice:', e);
+    }
+
     onOrderConfirmed(newOrder);
   };
 
