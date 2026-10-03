@@ -12,6 +12,8 @@ import {
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
+import { PharmacyMap } from '../map/PharmacyMap';
+import { PATIENT_DEFAULT_COORDS } from '../../data/patient/demoPharmacies';
 import { advanceOrderStatus } from '../../services/orderService';
 import type { ActiveOrder, OrderStatus } from '../../types/patient';
 
@@ -235,8 +237,28 @@ export const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({
           </Card>
         </div>
 
-        {/* Right 1 Col: Summary & Actions */}
+        {/* Right 1 Col: Summary, Map & Actions */}
         <div className="space-y-6">
+          {/* Live Delivery Route Map */}
+          <Card padded={false} className="overflow-hidden border-slate-200 shadow-sm">
+            <div className="p-3 bg-white border-b border-slate-100 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Live Fulfillment Routing</span>
+              </span>
+              <Badge variant="emerald" size="sm">
+                {order.pharmacyMatches.length} Assigned
+              </Badge>
+            </div>
+            <PharmacyMap
+              pharmacies={order.pharmacyMatches.map((m) => m.pharmacy)}
+              activePharmacyIds={order.pharmacyMatches.map((m) => m.pharmacy.id)}
+              patientCoords={PATIENT_DEFAULT_COORDS}
+              height="200px"
+              showRoutes={true}
+            />
+          </Card>
+
           {/* Delivery Details Card */}
           <Card className="bg-white border-slate-200 p-5 space-y-4">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">

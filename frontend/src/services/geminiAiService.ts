@@ -62,8 +62,8 @@ Return ONLY a clean JSON object with this EXACT structure (no markdown fences, n
   ]
 }`;
 
-    // Try models in order of capability: gemini-flash-latest, gemini-3.7-flash, gemini-3.5-flash, gemini-3.1-flash-lite
-    const candidateModels = ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+    // Try models in order of capability: gemini-3.7-flash, gemini-3.5-flash, gemini-3.1-flash-lite
+    const candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
     
     let parsedResult: any = null;
 

@@ -6,10 +6,14 @@ export interface Pharmacy {
   chain: string;
   address: string;
   distanceKm: number;
+  lat: number;
+  lng: number;
   rating: number;
   isVerified: boolean;
   hasColdChainStorage: boolean;
   contactNumber: string;
+  openHours: string;
+  availableServices: string[];
   // Medicine IDs in stock for demo scenarios
   inventoryMedicineIds: string[];
 }

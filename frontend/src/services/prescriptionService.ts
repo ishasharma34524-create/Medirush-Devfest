@@ -39,38 +39,23 @@ export async function checkBackendHealth(): Promise<boolean> {
 export async function analyzePrescriptionApi(
   fileOrDemo: File | 'demo'
 ): Promise<{ prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] }> {
-  // If user uploaded a real image/PDF, try client-side Gemini Vision first
+  // If user uploaded a real image/PDF, run Gemini AI Vision analysis!
   if (fileOrDemo !== 'demo') {
     console.log('[MediRush] Analyzing uploaded prescription file using Gemini AI Vision...');
-    try {
-      const geminiResult = await analyzePrescriptionWithGemini(fileOrDemo);
-      if (geminiResult && geminiResult.medicines && geminiResult.medicines.length > 0 && geminiResult.prescription.id !== DEMO_PRESCRIPTION.id) {
-        return geminiResult;
-      }
-    } catch (e) {
-      console.warn('Client Gemini call had issue, sending to backend API:', e);
+    const geminiResult = await analyzePrescriptionWithGemini(fileOrDemo);
+    if (geminiResult && geminiResult.medicines.length > 0) {
+      return geminiResult;
     }
   }
 
-  // Send to backend API which has multi-model Gemini Vision fallback
+  // If demo requested or Gemini fallback triggered
   try {
-    let body: any;
-
-    if (fileOrDemo instanceof File) {
-      const formData = new FormData();
-      formData.append('image', fileOrDemo);
-      formData.append('prescriptionType', 'custom_upload');
-      body = formData;
-    } else {
-      body = JSON.stringify({
-        prescriptionType: 'demo',
-        fileName: 'demo_prescription.pdf',
-      });
-    }
-
     const response = await apiRequest<BackendAnalyzeResponse>('prescriptions/analyze', {
       method: 'POST',
-      body,
+      body: JSON.stringify({
+        prescriptionType: fileOrDemo === 'demo' ? 'demo' : 'custom_upload',
+        fileName: fileOrDemo === 'demo' ? 'demo_prescription.pdf' : (fileOrDemo as File).name,
+      }),
     });
 
     if (response.success && response.data?.prescription) {

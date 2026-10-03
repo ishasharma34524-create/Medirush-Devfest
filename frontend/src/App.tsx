@@ -4,10 +4,11 @@ import { PatientDashboard } from './pages/patient/PatientDashboard';
 import { PrescriptionFlow } from './pages/patient/PrescriptionFlow';
 import { OrderTrackingScreen } from './components/fulfillment/OrderTrackingScreen';
 import { OrdersPage } from './pages/patient/OrdersPage';
+import { NearbyPharmaciesPage } from './pages/patient/NearbyPharmaciesPage';
 import { PlaceholderPage } from './pages/patient/PlaceholderPage';
 import type { PatientView, ActiveOrder } from './types/patient';
 import { mockPatientProfile, initialMedicines } from './data/patient/mockPatientData';
-import { Store, Stethoscope } from 'lucide-react';
+import { Stethoscope } from 'lucide-react';
 
 export function App() {
   const [currentView, setCurrentView] = useState<PatientView>('dashboard');
@@ -72,13 +73,9 @@ export function App() {
         )}
 
         {currentView === 'nearby-pharmacy' && (
-          <PlaceholderPage
-            title="Nearby Pharmacies"
-            subtitle="Certified Partner Pharmacy Network"
-            partTag="Pharmacy Network"
-            icon={Store}
-            description="Explore verified partner pharmacies in your area with real-time stock inquiry, cold-chain temperature verification, and average response times."
+          <NearbyPharmaciesPage
             onBackToDashboard={() => handleNavigate('dashboard')}
+            onUploadPrescription={() => handleNavigate('upload-prescription')}
           />
         )}
 

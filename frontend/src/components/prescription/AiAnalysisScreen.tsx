@@ -19,39 +19,32 @@ export const AiAnalysisScreen: React.FC<AiAnalysisScreenProps> = ({
 
   useEffect(() => {
     let isCancelled = false;
-    let minTimePassed = false;
-    let resolvedData: { prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] } | null = null;
+    let analysisResult: { prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] } | null = null;
 
-    // Trigger real backend API call in parallel with progressive UI animation
-    analyzePrescriptionApi(uploadPayload)
-      .then((res) => {
-        if (isCancelled) return;
-        resolvedData = res;
-        // If the visual animation has already completed all steps, transition immediately
-        if (minTimePassed) {
-          onComplete(res);
-        }
-      })
-      .catch((err) => {
-        console.warn('[AiAnalysisScreen] Analysis warning:', err);
-      });
+    // Trigger backend API call in parallel with the progressive UI animation
+    analyzePrescriptionApi(uploadPayload).then((res) => {
+      if (!isCancelled) {
+        analysisResult = res;
+      }
+    });
 
-    const stepInterval = 350; // Smooth ~1.7s animation
+    const stepInterval = 320; // Fast and snappy (~1.6s total)
     const timer = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < ANALYSIS_STEPS.length - 1) {
           return prev + 1;
         } else {
           clearInterval(timer);
-          minTimePassed = true;
-          // If the AI has already finished, finish immediately
-          if (resolvedData && !isCancelled) {
-            setTimeout(() => {
-              if (!isCancelled && resolvedData) {
-                onComplete(resolvedData);
-              }
-            }, 300);
-          }
+          setTimeout(() => {
+            if (!isCancelled && analysisResult) {
+              onComplete(analysisResult);
+            } else {
+              // Fallback if API was still resolving
+              analyzePrescriptionApi(uploadPayload).then((res) => {
+                if (!isCancelled) onComplete(res);
+              });
+            }
+          }, 350);
           return prev;
         }
       });

@@ -15,6 +15,8 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { calculateSequentialFulfillment } from '../../services/fulfillmentService';
+import { PharmacyMap } from '../map/PharmacyMap';
+import { DEMO_PHARMACIES, PATIENT_DEFAULT_COORDS } from '../../data/patient/demoPharmacies';
 import type { ExtractedMedicine } from '../../types/prescription';
 import type { FulfillmentPlan } from '../../types/pharmacy';
 
@@ -145,6 +147,18 @@ export const FindingMedicinesScreen: React.FC<FindingMedicinesScreenProps> = ({
               </Button>
             )}
           </div>
+        </div>
+
+        {/* Live Broadcast Geospatial Map */}
+        <div className="mb-6">
+          <PharmacyMap
+            pharmacies={DEMO_PHARMACIES}
+            activePharmacyIds={plan.matches.map((m) => m.pharmacy.id)}
+            queryingPharmacyId={isSearching && plan.broadcastLogs[currentStepIdx] ? plan.broadcastLogs[currentStepIdx].pharmacyId : undefined}
+            patientCoords={PATIENT_DEFAULT_COORDS}
+            height="260px"
+            showRoutes={true}
+          />
         </div>
 
         {/* Live Broadcast Progress List */}
