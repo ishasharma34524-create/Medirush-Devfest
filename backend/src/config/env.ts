@@ -5,7 +5,7 @@ dotenv.config();
 
 export const config = {
   port: Number(process.env.PORT) || 5000,
-  nodeEnv: process.env.NODE_ENV || "development",
-  clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
-  mongoUri: process.env.MONGODB_URI || "",
+  mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medirush",
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
 } as const;

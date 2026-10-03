@@ -5,6 +5,7 @@ import { connectDB } from "./config/db";
 import apiRouter from "./routes";
 import { notFoundHandler } from "./middleware/notFound.middleware";
 import { errorHandler } from "./middleware/error.middleware";
+import { seedInitialPharmaciesIfEmpty } from "./services/pharmacyService";
 
 // Initialize Express application
 const app: Application = express();
@@ -30,16 +31,20 @@ const PORT = config.port;
 
 /**
  * Start the application following the startup flow:
- * Environment Variables -> MongoDB Connection -> Express Server Starts
+ * Environment Variables -> MongoDB Connection -> Seed Demo Data -> Express Server Starts
  */
 const startServer = async (): Promise<void> => {
   // Step 1: Connect to MongoDB before starting server
   await connectDB();
 
-  // Step 2: Start Express HTTP server only after successful DB connection
+  // Step 2: Seed demo pharmacies if collection is empty (for demo-readiness)
+  await seedInitialPharmaciesIfEmpty();
+
+  // Step 3: Start Express HTTP server only after successful DB connection
   const server = app.listen(PORT, () => {
-    console.log(`[MediRush Server] Running in ${config.nodeEnv} mode on port ${PORT}`);
+    console.log(`[MediRush Server] Running on port ${PORT}`);
     console.log(`[MediRush Server] Health check: http://localhost:${PORT}/api/health`);
+    console.log(`[MediRush Server] API base: http://localhost:${PORT}/api`);
   });
 
   // Handle graceful shutdown
