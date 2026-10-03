@@ -4,7 +4,9 @@ import { PatientDashboard } from './pages/patient/PatientDashboard';
 import { PlaceholderPage } from './pages/patient/PlaceholderPage';
 import type { PatientView } from './types/patient';
 import { mockPatientProfile, initialActiveOrder, initialMedicines } from './data/patient/mockPatientData';
-import { UploadCloud, Package, Store, Stethoscope } from 'lucide-react';
+import { Package, Store, Stethoscope } from 'lucide-react';
+
+import { PrescriptionFlow } from './pages/patient/PrescriptionFlow';
 
 export function App() {
   const [currentView, setCurrentView] = useState<PatientView>('dashboard');
@@ -34,12 +36,7 @@ export function App() {
         )}
 
         {currentView === 'upload-prescription' && (
-          <PlaceholderPage
-            title="Upload Prescription"
-            subtitle="AI Prescription Intelligence & Medicine Extraction"
-            partTag="Upcoming in Part 2"
-            icon={UploadCloud}
-            description="In the next part, you will be able to upload handwritten or digital doctor prescriptions for OCR extraction, salt mapping, Schedule-H checks, and rapid pharmacy broadcasting."
+          <PrescriptionFlow
             onBackToDashboard={() => handleNavigate('dashboard')}
           />
         )}
