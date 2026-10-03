@@ -87,6 +87,38 @@ export const FALLBACK_PRESCRIPTION_MEDICINES: ExtractedMedicine[] = [
   },
 ];
 
+// List of models in order of priority for high availability
+const GEMINI_MODELS = [
+  "gemini-flash-latest",
+  "gemini-3.7-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-3.8-flash",
+];
+
+async function callGeminiWithFallback(
+  client: any,
+  contents: any
+): Promise<{ text: string; modelUsed: string }> {
+  let lastError: any = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await client.models.generateContent({
+        model,
+        contents,
+      });
+      if (response && response.text) {
+        return { text: response.text, modelUsed: model };
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Gemini Model: ${model}] Failed (${err.status || err.message}). Trying fallback model...`);
+    }
+  }
+  throw lastError || new Error("All Gemini models failed");
+}
+
 /**
  * 1. OCR: Parses a prescription image using Gemini Vision via official @google/genai SDK.
  */
@@ -126,25 +158,21 @@ JSON Structure:
 
     const base64Data = fileBuffer.toString("base64");
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType,
-              },
+    const { text: responseText, modelUsed } = await callGeminiWithFallback(client, [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType,
             },
-          ],
-        },
-      ],
-    });
+          },
+        ],
+      },
+    ]);
 
-    const responseText = response.text || "";
     const cleanedText = responseText
       .replace(/```json/gi, "")
       .replace(/```/g, "")
@@ -164,7 +192,7 @@ JSON Structure:
           confidence: Number(m.confidence) || 0.9,
         })),
         isFallback: false,
-        source: "Gemini Vision AI (@google/genai)",
+        source: `Gemini Vision AI (${modelUsed})`,
       };
     }
 
@@ -236,12 +264,8 @@ Return ONLY valid JSON (no markdown, no backticks):
   ]
 }`;
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
-    const cleaned = (response.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
+    const { text: responseText } = await callGeminiWithFallback(client, prompt);
+    const cleaned = (responseText || "").replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     return {
@@ -311,12 +335,8 @@ Return ONLY strict JSON (no markdown):
   "patientAdviceEnglish": "Clear clinical advice in English"
 }`;
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
-    const cleaned = (response.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
+    const { text: responseText } = await callGeminiWithFallback(client, prompt);
+    const cleaned = (responseText || "").replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     return {
@@ -393,12 +413,8 @@ Return ONLY strict JSON (no markdown):
   "storageAndColdChainTips": "Hinglish guidance on storage (especially fridge for cold-chain)"
 }`;
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
-    const cleaned = (response.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
+    const { text: responseText } = await callGeminiWithFallback(client, prompt);
+    const cleaned = (responseText || "").replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
     return {

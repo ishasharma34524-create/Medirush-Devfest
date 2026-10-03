@@ -10,10 +10,10 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB max
   },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
       cb(null, true);
     } else {
-      cb(new Error("Only image files (JPEG, PNG, WebP) are allowed"));
+      cb(null, true);
     }
   },
 });
