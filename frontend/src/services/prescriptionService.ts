@@ -1,6 +1,7 @@
 import { apiRequest } from './apiClient';
 import type { DemoPrescriptionData, ExtractedMedicine } from '../types/prescription';
 import { DEMO_PRESCRIPTION } from '../data/patient/demoPrescription';
+import { analyzePrescriptionWithGemini } from './geminiAiService';
 
 export interface BackendAnalyzeResponse {
   success: boolean;
@@ -32,18 +33,28 @@ export async function checkBackendHealth(): Promise<boolean> {
 }
 
 /**
- * Calls the MediRush backend API to analyze a prescription
+ * Calls Gemini AI Vision OCR to extract actual medicines from real prescription files,
+ * or returns deterministic chronic care dataset if Demo is selected.
  */
 export async function analyzePrescriptionApi(
   fileOrDemo: File | 'demo'
 ): Promise<{ prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] }> {
+  // If user uploaded a real image/PDF, run Gemini AI Vision analysis!
+  if (fileOrDemo !== 'demo') {
+    console.log('[MediRush] Analyzing uploaded prescription file using Gemini AI Vision...');
+    const geminiResult = await analyzePrescriptionWithGemini(fileOrDemo);
+    if (geminiResult && geminiResult.medicines.length > 0) {
+      return geminiResult;
+    }
+  }
+
+  // If demo requested or Gemini fallback triggered
   try {
-    const isDemo = fileOrDemo === 'demo';
     const response = await apiRequest<BackendAnalyzeResponse>('prescriptions/analyze', {
       method: 'POST',
       body: JSON.stringify({
-        prescriptionType: isDemo ? 'demo' : 'custom_upload',
-        fileName: isDemo ? 'demo_prescription.pdf' : (fileOrDemo as File).name,
+        prescriptionType: fileOrDemo === 'demo' ? 'demo' : 'custom_upload',
+        fileName: fileOrDemo === 'demo' ? 'demo_prescription.pdf' : (fileOrDemo as File).name,
       }),
     });
 

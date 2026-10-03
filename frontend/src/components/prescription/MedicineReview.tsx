@@ -1,27 +1,9 @@
-import React, { useState } from 'react';
-import {
-  ArrowRight,
-  Zap,
-  RefreshCw,
-  FileText,
-  User,
-  Hospital,
-  AlertTriangle,
-  Sparkles,
-  ShieldCheck,
-  Languages,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { ArrowRight, Zap, RefreshCw, FileText, User, Hospital, AlertTriangle } from 'lucide-react';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { MedicineCard } from './MedicineCard';
 import type { ExtractedMedicine, DemoPrescriptionData } from '../../types/prescription';
-import {
-  checkDrugInteractions,
-  explainPrescriptionHinglish,
-} from '../../services/backendService';
 
 interface MedicineReviewProps {
   prescription: DemoPrescriptionData;
@@ -42,13 +24,6 @@ export const MedicineReview: React.FC<MedicineReviewProps> = ({
   onOrderMedicines,
   onReupload,
 }) => {
-  // Gemini AI States
-  const [isCheckingInteractions, setIsCheckingInteractions] = useState(false);
-  const [interactionResult, setInteractionResult] = useState<any>(null);
-  const [isExplaining, setIsExplaining] = useState(false);
-  const [explanationResult, setExplanationResult] = useState<any>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
-
   // Calculate totals
   const totalItems = medicines.reduce((acc, med) => acc + med.quantity, 0);
   const estimatedTotal = medicines.reduce((acc, med) => {
@@ -69,56 +44,17 @@ export const MedicineReview: React.FC<MedicineReviewProps> = ({
   const hasColdChain = medicines.some((m) => m.isColdChain);
   const hasScheduleH = medicines.some((m) => m.isPrescriptionRequired);
 
-  // Run Gemini Safety Interaction Check
-  const handleCheckInteractions = async () => {
-    try {
-      setIsCheckingInteractions(true);
-      const payload = medicines.map((m) => ({
-        brandName: m.name,
-        salt: m.saltComposition,
-        strength: m.strength,
-      }));
-      const res = await checkDrugInteractions(payload);
-      setInteractionResult(res);
-    } catch (err) {
-      console.error('[Gemini Interaction Error]', err);
-    } finally {
-      setIsCheckingInteractions(false);
-    }
-  };
-
-  // Run Gemini Hinglish Patient Counseling
-  const handleExplainHinglish = async () => {
-    try {
-      setIsExplaining(true);
-      const payload = medicines.map((m) => ({
-        brandName: m.name,
-        salt: m.saltComposition,
-        strength: m.strength,
-      }));
-      const res = await explainPrescriptionHinglish(payload);
-      setExplanationResult(res);
-      setShowExplanation(true);
-    } catch (err) {
-      console.error('[Gemini Explainer Error]', err);
-    } finally {
-      setIsExplaining(false);
-    }
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      {/* Top Banner */}
+      {/* Top Banner: Product Identity & Mission Reassurance */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white p-5 sm:p-6 rounded-3xl border border-slate-700 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Badge variant="emerald" size="sm" icon={<Zap className="w-3.5 h-3.5" />}>
-                Gemini AI Prescription Complete
+                Prescription Intelligence Complete
               </Badge>
-              <span className="text-xs text-slate-300 font-medium">
-                {medicines.length} Medicines Identified
-              </span>
+              <span className="text-xs text-slate-300 font-medium">4 Medicines Identified</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               Review Your Extracted Medicines
@@ -170,115 +106,6 @@ export const MedicineReview: React.FC<MedicineReviewProps> = ({
           </div>
         </div>
       </Card>
-
-      {/* Gemini AI Intelligence Action Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Gemini Drug Safety Check Button */}
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl flex flex-col justify-between">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 text-xs block">AI Safety & Interaction Scan</span>
-              <span className="text-[11px] text-slate-500">Gemini checks for dangerous drug clashes</span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCheckInteractions}
-            disabled={isCheckingInteractions}
-            className="w-full text-xs font-semibold bg-white border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white"
-          >
-            {isCheckingInteractions ? "Scanning Interactions..." : "🔍 Scan Safety with Gemini"}
-          </Button>
-        </div>
-
-        {/* Gemini Hinglish Explainer Button */}
-        <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex flex-col justify-between">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center">
-              <Languages className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 text-xs block">Doctor Ki Parchi Samajhiye</span>
-              <span className="text-[11px] text-slate-500">Conversational Hinglish explanation for family</span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExplainHinglish}
-            disabled={isExplaining}
-            className="w-full text-xs font-semibold bg-white border-amber-300 text-amber-800 hover:bg-amber-600 hover:text-white"
-          >
-            {isExplaining ? "Translating to Hinglish..." : "🗣️ Samjhein Dawaiyon Ka Matlab"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Interaction Result Display */}
-      {interactionResult && (
-        <Card className="bg-white border-blue-200 p-4 sm:p-5 shadow-sm text-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-800 flex items-center gap-1.5 text-sm">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Safety Scan Status:
-              <Badge
-                variant={interactionResult.overallRisk === "SAFE" ? "emerald" : "amber"}
-                size="sm"
-              >
-                {interactionResult.overallRisk}
-              </Badge>
-            </span>
-            <span className="text-[11px] text-slate-400">Powered by Gemini 2.5 Flash</span>
-          </div>
-          <p className="text-slate-600">{interactionResult.summary}</p>
-          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-blue-900">
-            <strong>Patient Guidance (Hinglish):</strong> {interactionResult.patientAdviceHinglish}
-          </div>
-        </Card>
-      )}
-
-      {/* Hinglish Prescription Explainer Display */}
-      {explanationResult && showExplanation && (
-        <Card className="bg-white border-amber-200 p-4 sm:p-5 shadow-sm text-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-amber-900 text-sm flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              {explanationResult.hindiTitle}
-            </span>
-            <button
-              onClick={() => setShowExplanation(!showExplanation)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              {showExplanation ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-
-          <p className="text-slate-700 italic bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
-            "{explanationResult.overviewHinglish}"
-          </p>
-
-          <div className="space-y-2">
-            {explanationResult.medicineExplanations?.map((item: any, idx: number) => (
-              <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <span className="font-bold text-slate-800 block">{item.medicineName}</span>
-                <span className="text-slate-600 block mt-0.5"><strong>Kis liye hai:</strong> {item.purpose}</span>
-                <span className="text-slate-600 block mt-0.5"><strong>Kab lena hai:</strong> {item.timing}</span>
-                <span className="text-amber-800 block mt-0.5"><strong>Dhyan rakhein:</strong> {item.precautions}</span>
-              </div>
-            ))}
-          </div>
-
-          {explanationResult.storageAndColdChainTips && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900">
-              <strong>Storage Tip:</strong> {explanationResult.storageAndColdChainTips}
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* Medicines List */}
       <div className="space-y-4">
@@ -366,7 +193,7 @@ export const MedicineReview: React.FC<MedicineReviewProps> = ({
               disabled={medicines.length === 0}
               className="w-full sm:w-auto text-base font-bold px-8 shadow-lg shadow-emerald-700/30"
             >
-              Confirm & Find Fastest Route
+              Order Medicines
             </Button>
           </div>
         </div>
