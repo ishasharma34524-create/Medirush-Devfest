@@ -1,5 +1,14 @@
 import React from 'react';
-import { UploadCloud, Package, Store, Stethoscope, ArrowRight } from 'lucide-react';
+import {
+  UploadCloud,
+  Package,
+  Store,
+  Stethoscope,
+  ArrowRight,
+  FileText,
+  Sparkles,
+  Bell
+} from 'lucide-react';
 import { Card } from '../common/Card';
 import type { PatientView } from '../../types/patient';
 
@@ -29,6 +38,33 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNavigate }) => {
       hoverBorder: 'hover:border-emerald-300'
     },
     {
+      id: 'report-simplifier',
+      title: 'Report Simplifier',
+      description: 'Decode blood tests & lab reports into clear Hinglish.',
+      icon: <FileText className="w-6 h-6" />,
+      accentBg: 'bg-teal-50 text-teal-700',
+      accentText: 'text-teal-700',
+      hoverBorder: 'hover:border-teal-300'
+    },
+    {
+      id: 'home-remedies',
+      title: 'Ayurvedic Gharelu Nuskhe',
+      description: 'Evidence-based home remedies, herbal kadhas & safety advice.',
+      icon: <Sparkles className="w-6 h-6" />,
+      accentBg: 'bg-amber-50 text-amber-700',
+      accentText: 'text-amber-700',
+      hoverBorder: 'hover:border-amber-300'
+    },
+    {
+      id: 'medicine-reminder',
+      title: 'Medicine Reminder',
+      description: 'Daily pill tracker with voice alerts & family WhatsApp share.',
+      icon: <Bell className="w-6 h-6" />,
+      accentBg: 'bg-indigo-50 text-indigo-700',
+      accentText: 'text-indigo-700',
+      hoverBorder: 'hover:border-indigo-300'
+    },
+    {
       id: 'my-orders',
       title: 'My Orders',
       description: 'View active and previous medicine orders.',
@@ -40,22 +76,23 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNavigate }) => {
     {
       id: 'nearby-pharmacy',
       title: 'Nearby Pharmacy',
-      description: 'Find nearby pharmacies.',
+      description: 'Find nearby pharmacies and live stock.',
       icon: <Store className="w-6 h-6" />,
-      accentBg: 'bg-teal-50 text-teal-700',
-      accentText: 'text-teal-700',
-      hoverBorder: 'hover:border-teal-300'
+      accentBg: 'bg-cyan-50 text-cyan-700',
+      accentText: 'text-cyan-700',
+      hoverBorder: 'hover:border-cyan-300'
     },
     {
       id: 'symptom-checker',
       title: 'Symptom Checker',
       description: 'Get general AI-assisted guidance for symptoms.',
       icon: <Stethoscope className="w-6 h-6" />,
-      accentBg: 'bg-amber-50 text-amber-700',
-      accentText: 'text-amber-700',
-      hoverBorder: 'hover:border-amber-300'
+      accentBg: 'bg-purple-50 text-purple-700',
+      accentText: 'text-purple-700',
+      hoverBorder: 'hover:border-purple-300'
     }
   ];
+
 
   return (
     <section>

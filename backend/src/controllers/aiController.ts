@@ -3,6 +3,8 @@ import {
   getGenericAlternativesWithGemini,
   checkDrugInteractionsWithGemini,
   explainPrescriptionInHinglish,
+  simplifyMedicalReportWithGemini,
+  getHomeRemediesWithGemini,
 } from "../services/geminiService";
 
 /**
@@ -71,3 +73,51 @@ export const explainPrescriptionHandler = async (
     next(error);
   }
 };
+
+/**
+ * Controller for POST /api/ai/simplify-report
+ * Analyzes lab report (text or uploaded image) and provides simple Hinglish breakdown.
+ */
+export const simplifyReportHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const reportText = req.body.reportText;
+    const fileBuffer = req.file?.buffer;
+    const mimeType = req.file?.mimetype || "image/jpeg";
+
+    const result = await simplifyMedicalReportWithGemini(reportText, fileBuffer, mimeType);
+
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller for POST /api/ai/home-remedies
+ * Fetches traditional Ayurvedic and home remedies with preparation and red flags.
+ */
+export const getHomeRemediesHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const condition = req.body.condition || "cough";
+    const result = await getHomeRemediesWithGemini(condition);
+
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

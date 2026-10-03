@@ -215,3 +215,38 @@ export const explainPrescriptionHinglish = async (
   });
 };
 
+/**
+ * Gemini AI: Medical Report Simplifier
+ * Accepts either text or image file of lab report
+ */
+export const simplifyMedicalReportApi = async (
+  reportText?: string,
+  file?: File
+): Promise<any> => {
+  if (file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    if (reportText) formData.append("reportText", reportText);
+    return apiRequest("ai/simplify-report", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  return apiRequest("ai/simplify-report", {
+    method: "POST",
+    body: JSON.stringify({ reportText }),
+  });
+};
+
+/**
+ * Gemini AI: Ayurvedic & Evidence-Based Home Remedies (Gharelu Nuskhe)
+ */
+export const fetchHomeRemediesApi = async (condition: string): Promise<any> => {
+  return apiRequest("ai/home-remedies", {
+    method: "POST",
+    body: JSON.stringify({ condition }),
+  });
+};
+
+

@@ -5,7 +5,11 @@ import { PrescriptionFlow } from './pages/patient/PrescriptionFlow';
 import { OrderTrackingScreen } from './components/fulfillment/OrderTrackingScreen';
 import { OrdersPage } from './pages/patient/OrdersPage';
 import { NearbyPharmaciesPage } from './pages/patient/NearbyPharmaciesPage';
+import { MedicalReportSimplifierPage } from './pages/patient/MedicalReportSimplifierPage';
+import { HomeRemediesPage } from './pages/patient/HomeRemediesPage';
+import { MedicineReminderPage } from './pages/patient/MedicineReminderPage';
 import { PlaceholderPage } from './pages/patient/PlaceholderPage';
+
 import { ChemistDashboard } from './pages/chemist/ChemistDashboard';
 import type { PatientView, ActiveOrder } from './types/patient';
 import { mockPatientProfile, initialMedicines } from './data/patient/mockPatientData';
@@ -127,6 +131,24 @@ export function App() {
               />
             )}
 
+            {currentView === 'report-simplifier' && (
+              <MedicalReportSimplifierPage
+                onBackToDashboard={() => handleNavigate('dashboard')}
+              />
+            )}
+
+            {currentView === 'home-remedies' && (
+              <HomeRemediesPage
+                onBackToDashboard={() => handleNavigate('dashboard')}
+              />
+            )}
+
+            {currentView === 'medicine-reminder' && (
+              <MedicineReminderPage
+                onBackToDashboard={() => handleNavigate('dashboard')}
+              />
+            )}
+
             {currentView === 'symptom-checker' && (
               <PlaceholderPage
                 title="Symptom Checker"
@@ -140,6 +162,7 @@ export function App() {
           </main>
         </>
       )}
+
 
       {/* Healthcare Footer */}
       <footer className="bg-white border-t border-slate-200/80 mt-auto py-6">

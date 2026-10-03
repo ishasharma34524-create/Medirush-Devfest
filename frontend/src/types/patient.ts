@@ -76,4 +76,8 @@ export type PatientView =
   | 'order-tracking'
   | 'my-orders'
   | 'nearby-pharmacy'
-  | 'symptom-checker';
+  | 'symptom-checker'
+  | 'report-simplifier'
+  | 'home-remedies'
+  | 'medicine-reminder';
+
