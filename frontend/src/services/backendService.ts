@@ -155,3 +155,37 @@ export const dispatchOrderApi = async (orderId: string): Promise<any> => {
     method: "POST",
   });
 };
+
+/**
+ * Gemini AI: Generic Equivalent & Cost Savings Engine
+ */
+export const fetchGenericAlternatives = async (medicines: any[]): Promise<any> => {
+  return apiRequest("ai/alternatives", {
+    method: "POST",
+    body: JSON.stringify({ medicines }),
+  });
+};
+
+/**
+ * Gemini AI: Drug-Drug Interaction and Contraindication Safety Checker
+ */
+export const checkDrugInteractions = async (medicines: any[]): Promise<any> => {
+  return apiRequest("ai/interactions", {
+    method: "POST",
+    body: JSON.stringify({ medicines }),
+  });
+};
+
+/**
+ * Gemini AI: Patient Prescription Explainer in Conversational Hinglish
+ */
+export const explainPrescriptionHinglish = async (
+  medicines: any[],
+  patientNotes?: string
+): Promise<any> => {
+  return apiRequest("ai/explain", {
+    method: "POST",
+    body: JSON.stringify({ medicines, patientNotes }),
+  });
+};
+
