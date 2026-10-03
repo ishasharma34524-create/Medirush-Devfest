@@ -8,35 +8,43 @@
 
 ```
 Medirush-Devfest/
-├── backend/       # Express.js + TypeScript Backend API
-└── frontend/      # Client Application (developed in parallel)
+├── backend/       # Express.js + TypeScript + MongoDB + Gemini Vision API
+└── frontend/      # React + Vite + TypeScript + Tailwind Patient App
 ```
 
 ---
 
-## ⚡ Backend Quickstart
+## 🚀 Quickstart Guide
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+### 1. Backend Server Setup
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run dev
+```
+* **API Server:** `http://localhost:5000`
+* **Health Check:** `http://localhost:5000/api/health`
 
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
+### 2. Frontend Client Setup
 
-4. Start development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+* **Client App:** `http://localhost:5173`
 
-5. Health check verification:
-   ```bash
-   curl http://localhost:5000/api/health
-   ```
+---
+
+## 📡 Core API Flow
+
+1. **`GET /api/health`** — Server and service verification
+2. **`POST /api/prescriptions/parse`** — Gemini OCR with resilient Tier-2/3 medicine fallback
+3. **`GET /api/pharmacies/nearby`** — Haversine-distance nearby pharmacy stock discovery
+4. **`POST /api/orders`** — Create emergency medicine order (`CREATED`)
+5. **`POST /api/orders/:id/broadcast`** — Broadcast to matching local pharmacies (`BROADCASTING`)
+6. **`POST /api/orders/:id/confirm`** — Pharmacist acceptance lock (`PHARMACY_ACCEPTED`)
+7. **`POST /api/orders/:id/dispatch`** — Dispatch live delivery rider (`OUT_FOR_DELIVERY`)
