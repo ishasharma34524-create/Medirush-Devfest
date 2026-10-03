@@ -12,19 +12,21 @@ interface PrescriptionFlowProps {
 
 export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDashboard }) => {
   const [step, setStep] = useState<PrescriptionStep>('upload');
-  const [prescriptionData] = useState<DemoPrescriptionData>(DEMO_PRESCRIPTION);
+  const [uploadPayload, setUploadPayload] = useState<File | 'demo'>('demo');
+  const [prescriptionData, setPrescriptionData] = useState<DemoPrescriptionData>(DEMO_PRESCRIPTION);
   const [medicines, setMedicines] = useState<ExtractedMedicine[]>(() =>
     JSON.parse(JSON.stringify(DEMO_PRESCRIPTION.medicines))
   );
 
-  const handleStartAnalysis = () => {
-    // Reset to fresh demo data on start
-    setMedicines(JSON.parse(JSON.stringify(DEMO_PRESCRIPTION.medicines)));
+  const handleStartAnalysis = (payload: File | 'demo' = 'demo') => {
+    setUploadPayload(payload);
     setStep('analyzing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAnalysisComplete = () => {
+  const handleAnalysisComplete = (data: { prescription: DemoPrescriptionData; medicines: ExtractedMedicine[] }) => {
+    setPrescriptionData(data.prescription);
+    setMedicines(data.medicines);
     setStep('review');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -66,7 +68,10 @@ export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDash
       )}
 
       {step === 'analyzing' && (
-        <AiAnalysisScreen onComplete={handleAnalysisComplete} />
+        <AiAnalysisScreen 
+          uploadPayload={uploadPayload}
+          onComplete={handleAnalysisComplete} 
+        />
       )}
 
       {step === 'review' && (
