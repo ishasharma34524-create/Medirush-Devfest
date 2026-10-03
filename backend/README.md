@@ -9,6 +9,7 @@ Production-grade Express + TypeScript backend foundation for **MediRush** — an
 * **Runtime:** Node.js (v18+)
 * **Framework:** Express.js
 * **Language:** TypeScript
+* **Database:** MongoDB via Mongoose
 * **Package Manager:** npm
 * **Utilities:** CORS, dotenv
 
@@ -19,21 +20,22 @@ Production-grade Express + TypeScript backend foundation for **MediRush** — an
 ```
 backend/
 ├── src/
-│   ├── config/              # Environment & configuration loading
-│   │   └── env.ts
+│   ├── config/              # Environment & database configuration
+│   │   ├── db.ts            # MongoDB connection logic
+│   │   └── env.ts           # Environment variables loader
 │   ├── controllers/         # Request handling logic
 │   │   └── health.controller.ts
 │   ├── middleware/          # Centralized middleware (404, errors)
 │   │   ├── error.middleware.ts
 │   │   └── notFound.middleware.ts
-│   ├── models/              # Data models (MongoDB/Mongoose in future)
+│   ├── models/              # Data models (Mongoose schemas)
 │   ├── routes/              # Modular API routing
 │   │   ├── health.routes.ts
 │   │   └── index.ts
 │   ├── services/            # Core business logic & Gemini AI services
 │   ├── socket/              # Real-time WebSocket/Socket.IO handlers
 │   ├── utils/               # Shared utilities & helpers
-│   └── server.ts            # Server entrypoint & configuration
+│   └── server.ts            # Server entrypoint & DB connection orchestration
 ├── .env.example             # Template for environment variables
 ├── .env                     # Local environment configuration
 ├── .gitignore               # Git ignored files & directories
@@ -71,6 +73,7 @@ cp .env.example .env
 Default variables:
 ```env
 PORT=5000
+MONGODB_URI=your_mongodb_connection_string
 NODE_ENV=development
 CLIENT_URL=http://localhost:3000
 ```

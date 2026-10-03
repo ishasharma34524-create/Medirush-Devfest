@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import { config } from "./config/env";
+import { connectDB } from "./config/db";
 import apiRouter from "./routes";
 import { notFoundHandler } from "./middleware/notFound.middleware";
 import { errorHandler } from "./middleware/error.middleware";
@@ -27,18 +28,30 @@ app.use(errorHandler);
 // Safe development fallback port handled via config.port
 const PORT = config.port;
 
-const server = app.listen(PORT, () => {
-  console.log(`[MediRush Server] Running in ${config.nodeEnv} mode on port ${PORT}`);
-  console.log(`[MediRush Server] Health check: http://localhost:${PORT}/api/health`);
-});
+/**
+ * Start the application following the startup flow:
+ * Environment Variables -> MongoDB Connection -> Express Server Starts
+ */
+const startServer = async (): Promise<void> => {
+  // Step 1: Connect to MongoDB before starting server
+  await connectDB();
 
-// Handle graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("[MediRush Server] SIGTERM signal received. Closing HTTP server...");
-  server.close(() => {
-    console.log("[MediRush Server] HTTP server closed cleanly.");
-    process.exit(0);
+  // Step 2: Start Express HTTP server only after successful DB connection
+  const server = app.listen(PORT, () => {
+    console.log(`[MediRush Server] Running in ${config.nodeEnv} mode on port ${PORT}`);
+    console.log(`[MediRush Server] Health check: http://localhost:${PORT}/api/health`);
   });
-});
+
+  // Handle graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("[MediRush Server] SIGTERM signal received. Closing HTTP server...");
+    server.close(() => {
+      console.log("[MediRush Server] HTTP server closed cleanly.");
+      process.exit(0);
+    });
+  });
+};
+
+startServer();
 
 export default app;
