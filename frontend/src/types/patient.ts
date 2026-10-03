@@ -1,3 +1,6 @@
+import type { ExtractedMedicine } from './prescription';
+import type { PharmacyFulfillmentMatch } from './pharmacy';
+
 export interface PatientProfile {
   id: string;
   name: string;
@@ -12,22 +15,47 @@ export interface PatientProfile {
   unreadNotificationsCount: number;
 }
 
-export interface ActiveOrderItem {
-  id: string;
-  name: string;
-  quantity: number;
-  strength?: string;
+export type OrderStatus = 
+  | 'placed'
+  | 'verification'
+  | 'confirmed'
+  | 'preparing'
+  | 'out_for_delivery'
+  | 'delivered';
+
+export interface OrderTimelineStep {
+  status: OrderStatus;
+  label: string;
+  description: string;
+  time?: string;
+  isComplete: boolean;
+  isCurrent: boolean;
 }
 
 export interface ActiveOrder {
   id: string;
   orderNumber: string;
   createdAt: string;
-  status: 'searching' | 'matched' | 'confirmed' | 'packing' | 'out_for_delivery' | 'delivered';
-  items: ActiveOrderItem[];
-  estimatedDeliveryTime?: string;
-  pharmacyCount?: number;
-  totalAmount?: number;
+  status: OrderStatus;
+  medicines: ExtractedMedicine[];
+  pharmacyMatches: PharmacyFulfillmentMatch[];
+  estimatedDeliveryMinutes: number;
+  deliveryAddress: string;
+  totalAmount: number;
+  deliveryOtp: string;
+  hasColdChain: boolean;
+  timeline: OrderTimelineStep[];
+}
+
+export interface HistoricalOrder {
+  id: string;
+  orderNumber: string;
+  date: string;
+  medicinesCount: number;
+  medicinesSummary: string;
+  totalAmount: number;
+  status: 'delivered' | 'cancelled';
+  pharmaciesCount: number;
 }
 
 export interface PrescribedMedicine {
@@ -44,6 +72,8 @@ export interface PrescribedMedicine {
 export type PatientView = 
   | 'dashboard'
   | 'upload-prescription'
+  | 'finding-medicines'
+  | 'order-tracking'
   | 'my-orders'
   | 'nearby-pharmacy'
   | 'symptom-checker';

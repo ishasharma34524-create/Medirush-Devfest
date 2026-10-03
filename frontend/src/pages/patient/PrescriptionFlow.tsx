@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { PrescriptionUpload } from '../../components/prescription/PrescriptionUpload';
 import { AiAnalysisScreen } from '../../components/prescription/AiAnalysisScreen';
 import { MedicineReview } from '../../components/prescription/MedicineReview';
-import { FulfillmentReadyView } from '../../components/prescription/FulfillmentReadyView';
+import { FindingMedicinesScreen } from '../../components/fulfillment/FindingMedicinesScreen';
 import { DEMO_PRESCRIPTION } from '../../data/patient/demoPrescription';
+import { createOrderFromFulfillment } from '../../services/orderService';
 import type { ExtractedMedicine, PrescriptionStep, DemoPrescriptionData } from '../../types/prescription';
+import type { FulfillmentPlan } from '../../types/pharmacy';
+import type { ActiveOrder } from '../../types/patient';
 
 interface PrescriptionFlowProps {
   onBackToDashboard: () => void;
+  onOrderConfirmed: (order: ActiveOrder) => void;
 }
 
-export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDashboard }) => {
+export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ 
+  onBackToDashboard,
+  onOrderConfirmed,
+}) => {
   const [step, setStep] = useState<PrescriptionStep>('upload');
   const [uploadPayload, setUploadPayload] = useState<File | 'demo'>('demo');
   const [prescriptionData, setPrescriptionData] = useState<DemoPrescriptionData>(DEMO_PRESCRIPTION);
@@ -48,8 +55,14 @@ export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDash
   };
 
   const handleOrderMedicines = () => {
-    setStep('fulfillment-ready');
+    // Navigate directly into Finding Your Medicines (Sequential Broadcast)
+    setStep('finding-medicines');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleConfirmOrder = (plan: FulfillmentPlan) => {
+    const newOrder = createOrderFromFulfillment(medicines, plan);
+    onOrderConfirmed(newOrder);
   };
 
   const handleReupload = () => {
@@ -61,8 +74,8 @@ export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDash
     <div>
       {step === 'upload' && (
         <PrescriptionUpload
-          onSelectDemo={handleStartAnalysis}
-          onFileUpload={handleStartAnalysis}
+          onSelectDemo={() => handleStartAnalysis('demo')}
+          onFileUpload={(file) => handleStartAnalysis(file)}
           onBack={onBackToDashboard}
         />
       )}
@@ -86,12 +99,11 @@ export const PrescriptionFlow: React.FC<PrescriptionFlowProps> = ({ onBackToDash
         />
       )}
 
-      {step === 'fulfillment-ready' && (
-        <FulfillmentReadyView
-          prescription={prescriptionData}
+      {step === 'finding-medicines' && (
+        <FindingMedicinesScreen
           medicines={medicines}
-          onBackToDashboard={onBackToDashboard}
-          onRestartDemo={handleStartAnalysis}
+          onConfirmOrder={handleConfirmOrder}
+          onBackToReview={() => setStep('review')}
         />
       )}
     </div>

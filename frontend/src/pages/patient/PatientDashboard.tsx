@@ -42,6 +42,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
         <ActiveOrderCard
           order={activeOrder}
           onUploadClick={handleUploadClick}
+          onViewOrderDetails={() => onNavigate('order-tracking')}
         />
         <MedicinesPreview
           medicines={medicines}

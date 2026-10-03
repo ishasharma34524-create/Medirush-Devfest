@@ -43,4 +43,5 @@ export type PrescriptionStep =
   | 'upload'
   | 'analyzing'
   | 'review'
+  | 'finding-medicines'
   | 'fulfillment-ready';
