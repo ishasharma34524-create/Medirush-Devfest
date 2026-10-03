@@ -1,7 +1,6 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { Order, IOrder, OrderStatus, IOrderItem, IDeliveryLocation } from "../models/Order";
-import { Pharmacy } from "../models/Pharmacy";
-import { findNearbyPharmacies, NearbyPharmacyResult } from "./pharmacyService";
+import { findNearbyPharmacies, NearbyPharmacyResult, DEMO_PHARMACIES_LIST } from "./pharmacyService";
 
 export interface CreateOrderInput {
   patientId: string;
@@ -10,10 +9,13 @@ export interface CreateOrderInput {
   payout?: number;
 }
 
+// In-memory demo store used when MongoDB is offline
+const inMemoryOrders = new Map<string, any>();
+
 /**
  * Creates and stores a new order with CREATED status.
  */
-export const createOrder = async (input: CreateOrderInput): Promise<IOrder> => {
+export const createOrder = async (input: CreateOrderInput): Promise<any> => {
   if (!input.patientId || !input.patientId.trim()) {
     throw new Error("patientId is required");
   }
@@ -31,26 +33,56 @@ export const createOrder = async (input: CreateOrderInput): Promise<IOrder> => {
     throw new Error("Valid deliveryLocation with address, latitude, and longitude is required");
   }
 
-  const order = new Order({
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const order = new Order({
+        patientId: input.patientId,
+        medicines: input.medicines,
+        deliveryLocation: input.deliveryLocation,
+        status: OrderStatus.CREATED,
+        payout: input.payout || 50,
+        etaMinutes: 25,
+      });
+      return await order.save();
+    } catch (dbErr) {
+      console.warn("[Order Service] MongoDB save failed, falling back to memory store:", dbErr);
+    }
+  }
+
+  // Resilient in-memory fallback
+  const mockId = new Types.ObjectId().toString();
+  const mockOrder = {
+    _id: mockId,
     patientId: input.patientId,
     medicines: input.medicines,
     deliveryLocation: input.deliveryLocation,
     status: OrderStatus.CREATED,
     payout: input.payout || 50,
     etaMinutes: 25,
-  });
+    createdAt: new Date(),
+  };
 
-  return await order.save();
+  inMemoryOrders.set(mockId, mockOrder);
+  return mockOrder;
 };
 
 /**
- * Retrieves an order by ID with optional pharmacy population.
+ * Retrieves an order by ID.
  */
-export const getOrderById = async (orderId: string): Promise<IOrder | null> => {
-  if (!Types.ObjectId.isValid(orderId)) {
-    throw new Error("Invalid Order ID format");
+export const getOrderById = async (orderId: string): Promise<any | null> => {
+  if (mongoose.connection.readyState === 1 && Types.ObjectId.isValid(orderId)) {
+    try {
+      const order = await Order.findById(orderId).populate(
+        "pharmacyId",
+        "name address latitude longitude isOnline"
+      );
+      if (order) return order;
+    } catch {
+      // Fall through to memory store
+    }
   }
-  return await Order.findById(orderId).populate("pharmacyId", "name address latitude longitude isOnline");
+
+  return inMemoryOrders.get(orderId) || null;
 };
 
 /**
@@ -60,8 +92,21 @@ export const getOrderById = async (orderId: string): Promise<IOrder | null> => {
 export const broadcastOrder = async (
   orderId: string,
   radiusKm: number = 10
-): Promise<{ order: IOrder; matchingPharmacies: NearbyPharmacyResult[] }> => {
-  const order = await getOrderById(orderId);
+): Promise<{ order: any; matchingPharmacies: NearbyPharmacyResult[] }> => {
+  let order: any = null;
+
+  if (mongoose.connection.readyState === 1 && Types.ObjectId.isValid(orderId)) {
+    try {
+      order = await Order.findById(orderId);
+    } catch {
+      order = null;
+    }
+  }
+
+  if (!order) {
+    order = inMemoryOrders.get(orderId);
+  }
+
   if (!order) {
     throw new Error(`Order with ID ${orderId} not found`);
   }
@@ -72,10 +117,16 @@ export const broadcastOrder = async (
 
   // Update order status to BROADCASTING
   order.status = OrderStatus.BROADCASTING;
-  await order.save();
+  if (typeof order.save === "function") {
+    await order.save();
+  } else {
+    inMemoryOrders.set(orderId, order);
+  }
 
   // Extract medicine names to check stock matches
-  const medicineNames = order.medicines.map((m) => m.brandName || m.salt || "");
+  const medicineNames = (order.medicines || []).map(
+    (m: any) => m.brandName || m.name || m.salt || ""
+  );
 
   // Find online nearby pharmacies with matched stock
   const allNearby = await findNearbyPharmacies(
@@ -85,7 +136,6 @@ export const broadcastOrder = async (
     medicineNames
   );
 
-  // Filter only online pharmacies that have matching or relevant stock
   const matchingPharmacies = allNearby.filter((p) => p.isOnline);
 
   return { order, matchingPharmacies };
@@ -98,15 +148,21 @@ export const broadcastOrder = async (
 export const confirmOrder = async (
   orderId: string,
   pharmacyId: string
-): Promise<IOrder> => {
-  if (!Types.ObjectId.isValid(orderId)) {
-    throw new Error("Invalid Order ID format");
-  }
-  if (!Types.ObjectId.isValid(pharmacyId)) {
-    throw new Error("Invalid Pharmacy ID format");
+): Promise<any> => {
+  let order: any = null;
+
+  if (mongoose.connection.readyState === 1 && Types.ObjectId.isValid(orderId)) {
+    try {
+      order = await Order.findById(orderId);
+    } catch {
+      order = null;
+    }
   }
 
-  const order = await Order.findById(orderId);
+  if (!order) {
+    order = inMemoryOrders.get(orderId);
+  }
+
   if (!order) {
     throw new Error(`Order with ID ${orderId} not found`);
   }
@@ -126,28 +182,36 @@ export const confirmOrder = async (
     throw new Error("Cannot confirm a cancelled order");
   }
 
-  // Verify pharmacy exists
-  const pharmacy = await Pharmacy.findById(pharmacyId);
-  if (!pharmacy) {
-    throw new Error(`Pharmacy with ID ${pharmacyId} not found`);
-  }
-
-  order.pharmacyId = new Types.ObjectId(pharmacyId);
+  order.pharmacyId = pharmacyId;
   order.status = OrderStatus.PHARMACY_ACCEPTED;
 
-  return await order.save();
+  if (typeof order.save === "function") {
+    return await order.save();
+  } else {
+    inMemoryOrders.set(orderId, order);
+    return order;
+  }
 };
 
 /**
  * Dispatches the order for delivery.
  * Assigns demo rider and realistic ETA, sets status to OUT_FOR_DELIVERY.
  */
-export const dispatchOrder = async (orderId: string): Promise<IOrder> => {
-  if (!Types.ObjectId.isValid(orderId)) {
-    throw new Error("Invalid Order ID format");
+export const dispatchOrder = async (orderId: string): Promise<any> => {
+  let order: any = null;
+
+  if (mongoose.connection.readyState === 1 && Types.ObjectId.isValid(orderId)) {
+    try {
+      order = await Order.findById(orderId);
+    } catch {
+      order = null;
+    }
   }
 
-  const order = await Order.findById(orderId);
+  if (!order) {
+    order = inMemoryOrders.get(orderId);
+  }
+
   if (!order) {
     throw new Error(`Order with ID ${orderId} not found`);
   }
@@ -167,5 +231,10 @@ export const dispatchOrder = async (orderId: string): Promise<IOrder> => {
   order.etaMinutes = 15;
   order.status = OrderStatus.OUT_FOR_DELIVERY;
 
-  return await order.save();
+  if (typeof order.save === "function") {
+    return await order.save();
+  } else {
+    inMemoryOrders.set(orderId, order);
+    return order;
+  }
 };

@@ -31,16 +31,18 @@ const PORT = config.port;
 
 /**
  * Start the application following the startup flow:
- * Environment Variables -> MongoDB Connection -> Seed Demo Data -> Express Server Starts
+ * Environment Variables -> MongoDB Connection Attempt -> Express Server Starts
  */
 const startServer = async (): Promise<void> => {
-  // Step 1: Connect to MongoDB before starting server
-  await connectDB();
+  // Step 1: Attempt MongoDB connection with fail-safe fast timeout (3s)
+  const isDbConnected = await connectDB();
 
-  // Step 2: Seed demo pharmacies if collection is empty (for demo-readiness)
-  await seedInitialPharmaciesIfEmpty();
+  // Step 2: Seed demo pharmacies if MongoDB is active
+  if (isDbConnected) {
+    await seedInitialPharmaciesIfEmpty();
+  }
 
-  // Step 3: Start Express HTTP server only after successful DB connection
+  // Step 3: Start Express HTTP server
   const server = app.listen(PORT, () => {
     console.log(`[MediRush Server] Running on port ${PORT}`);
     console.log(`[MediRush Server] Health check: http://localhost:${PORT}/api/health`);

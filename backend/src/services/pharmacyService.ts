@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Pharmacy, IPharmacy, IPharmacyStock } from "../models/Pharmacy";
 
 export interface NearbyPharmacyResult {
@@ -13,6 +14,48 @@ export interface NearbyPharmacyResult {
   isOnline: boolean;
   relevantStock: IPharmacyStock[];
 }
+
+export const DEMO_PHARMACIES_LIST = [
+  {
+    _id: "650000000000000000000001",
+    name: "Sanjeevani Medicos (Palasia)",
+    address: "12/A Greater Kailash Road, Old Palasia, Indore, MP",
+    latitude: 22.7244,
+    longitude: 75.8839,
+    isOnline: true,
+    stock: [
+      { medicineName: "Lantus 100 IU/mL", quantity: 15, available: true },
+      { medicineName: "Augmentin 625mg", quantity: 40, available: true },
+      { medicineName: "Dolo 650mg", quantity: 100, available: true },
+      { medicineName: "Azithral 500mg", quantity: 25, available: true },
+    ],
+  },
+  {
+    _id: "650000000000000000000002",
+    name: "Apollo Pharmacy (Vijay Nagar)",
+    address: "Scheme No 54, Vijay Nagar Square, Indore, MP",
+    latitude: 22.7533,
+    longitude: 75.8937,
+    isOnline: true,
+    stock: [
+      { medicineName: "Lantus 100 IU/mL", quantity: 8, available: true },
+      { medicineName: "Augmentin 625mg", quantity: 50, available: true },
+      { medicineName: "Metformin 500mg", quantity: 80, available: true },
+    ],
+  },
+  {
+    _id: "650000000000000000000003",
+    name: "Sharma Medical & Surgical Store",
+    address: "Shop 4, Freeganj Market, Ujjain, MP",
+    latitude: 23.1765,
+    longitude: 75.7885,
+    isOnline: true,
+    stock: [
+      { medicineName: "Augmentin 625mg", quantity: 20, available: true },
+      { medicineName: "Dolo 650mg", quantity: 60, available: true },
+    ],
+  },
+];
 
 /**
  * Calculates Great Circle distance between two geo-coordinates using Haversine formula.
@@ -39,6 +82,7 @@ export const calculateHaversineDistance = (
 
 /**
  * Finds pharmacies near given coordinates within radiusKm, ordered by distance.
+ * Resilient to MongoDB availability.
  */
 export const findNearbyPharmacies = async (
   latitude: number,
@@ -46,8 +90,20 @@ export const findNearbyPharmacies = async (
   radiusKm: number = 10,
   filterMedicines?: string[]
 ): Promise<NearbyPharmacyResult[]> => {
-  // Query all active pharmacies
-  const pharmacies = await Pharmacy.find({});
+  let pharmacies: any[] = [];
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      pharmacies = await Pharmacy.find({});
+    } catch {
+      pharmacies = [];
+    }
+  }
+
+  // Fallback to built-in demo pharmacies if MongoDB has no records or is offline
+  if (!pharmacies || pharmacies.length === 0) {
+    pharmacies = DEMO_PHARMACIES_LIST;
+  }
 
   const results: NearbyPharmacyResult[] = [];
 
@@ -60,28 +116,27 @@ export const findNearbyPharmacies = async (
     );
 
     if (distanceKm <= radiusKm) {
-      // Filter relevant stock if medicine names are specified
-      let relevantStock = p.stock;
+      let relevantStock = p.stock || [];
       if (filterMedicines && filterMedicines.length > 0) {
         const lowerFilter = filterMedicines.map((m) => m.toLowerCase());
-        relevantStock = p.stock.filter((s) =>
+        relevantStock = relevantStock.filter((s: any) =>
           lowerFilter.some((filterName) =>
-            s.medicineName.toLowerCase().includes(filterName)
+            (s.medicineName || "").toLowerCase().includes(filterName)
           )
         );
       }
 
       results.push({
         pharmacy: {
-          id: p._id.toString(),
+          id: p._id?.toString() || p.id,
           name: p.name,
           address: p.address,
           latitude: p.latitude,
           longitude: p.longitude,
-          isOnline: p.isOnline,
+          isOnline: Boolean(p.isOnline),
         },
         distanceKm,
-        isOnline: p.isOnline,
+        isOnline: Boolean(p.isOnline),
         relevantStock,
       });
     }
@@ -96,60 +151,36 @@ export const findNearbyPharmacies = async (
  */
 export const getPharmacyByIdWithStock = async (
   pharmacyId: string
-): Promise<IPharmacy | null> => {
-  return Pharmacy.findById(pharmacyId);
+): Promise<any | null> => {
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const found = await Pharmacy.findById(pharmacyId);
+      if (found) return found;
+    } catch {
+      // Continue to demo list fallback
+    }
+  }
+
+  return (
+    DEMO_PHARMACIES_LIST.find(
+      (p) => p._id === pharmacyId || p._id === String(pharmacyId)
+    ) || null
+  );
 };
 
 /**
- * Demo seed helper: populates demo pharmacies if the database collection is empty.
+ * Demo seed helper: populates demo pharmacies if MongoDB is active and collection is empty.
  */
 export const seedInitialPharmaciesIfEmpty = async (): Promise<void> => {
+  if (mongoose.connection.readyState !== 1) return;
+
   try {
     const count = await Pharmacy.countDocuments();
     if (count > 0) return;
 
-    const demoPharmacies = [
-      {
-        name: "Sanjeevani Medicos (Palasia)",
-        address: "12/A Greater Kailash Road, Old Palasia, Indore, MP",
-        latitude: 22.7244,
-        longitude: 75.8839,
-        isOnline: true,
-        stock: [
-          { medicineName: "Lantus 100 IU/mL", quantity: 15, available: true },
-          { medicineName: "Augmentin 625mg", quantity: 40, available: true },
-          { medicineName: "Dolo 650mg", quantity: 100, available: true },
-          { medicineName: "Azithral 500mg", quantity: 25, available: true },
-        ],
-      },
-      {
-        name: "Apollo Pharmacy (Vijay Nagar)",
-        address: "Scheme No 54, Vijay Nagar Square, Indore, MP",
-        latitude: 22.7533,
-        longitude: 75.8937,
-        isOnline: true,
-        stock: [
-          { medicineName: "Lantus 100 IU/mL", quantity: 8, available: true },
-          { medicineName: "Augmentin 625mg", quantity: 50, available: true },
-          { medicineName: "Metformin 500mg", quantity: 80, available: true },
-        ],
-      },
-      {
-        name: "Sharma Medical & Surgical Store",
-        address: "Shop 4, Freeganj Market, Ujjain, MP",
-        latitude: 23.1765,
-        longitude: 75.7885,
-        isOnline: true,
-        stock: [
-          { medicineName: "Augmentin 625mg", quantity: 20, available: true },
-          { medicineName: "Dolo 650mg", quantity: 60, available: true },
-        ],
-      },
-    ];
-
-    await Pharmacy.insertMany(demoPharmacies);
+    await Pharmacy.insertMany(DEMO_PHARMACIES_LIST);
     console.log("[MediRush Demo] Seeded initial pharmacies for Indore & Ujjain demo");
   } catch (err) {
-    console.warn("[MediRush Demo] Pharmacy auto-seed skipped or failed:", err);
+    console.warn("[MediRush Demo] Pharmacy auto-seed skipped:", err);
   }
 };
