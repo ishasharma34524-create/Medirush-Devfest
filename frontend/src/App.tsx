@@ -11,12 +11,13 @@ import { MedicineReminderPage } from './pages/patient/MedicineReminderPage';
 import { PlaceholderPage } from './pages/patient/PlaceholderPage';
 
 import { ChemistDashboard } from './pages/chemist/ChemistDashboard';
+import { LandingPage } from './pages/landing/LandingPage';
 import type { PatientView, ActiveOrder } from './types/patient';
 import { mockPatientProfile, initialMedicines } from './data/patient/mockPatientData';
 import { Stethoscope } from 'lucide-react';
 
 export function App() {
-  const [currentPortal, setCurrentPortal] = useState<'patient' | 'chemist'>('patient');
+  const [currentPortal, setCurrentPortal] = useState<'landing' | 'patient' | 'chemist'>('landing');
   const [currentView, setCurrentView] = useState<PatientView>('dashboard');
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
 
@@ -34,20 +35,30 @@ export function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
       {/* Global Top Portal Bar */}
-      <div className="bg-slate-950 text-white text-xs py-2 px-4 border-b border-slate-800">
+      <div className="bg-slate-950 text-white text-xs py-2 px-4 border-b border-slate-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-slate-200">MediRush Live Healthcare System:</span>
+            <span className="font-bold text-slate-200">MediRush Live System:</span>
             <span className="text-slate-400 hidden md:inline">
-              Switch between Patient App & Live Chemist Station
+              Hyperlocal Prescription Intelligence & Multi-Chemist Dispatch
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setCurrentPortal('landing')}
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                currentPortal === 'landing'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'bg-slate-800 text-slate-300 hover:text-white'
+              }`}
+            >
+              🌐 Overview
+            </button>
             <button
               onClick={() => setCurrentPortal('patient')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 currentPortal === 'patient'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:text-white'
@@ -57,13 +68,13 @@ export function App() {
             </button>
             <button
               onClick={() => setCurrentPortal('chemist')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentPortal === 'chemist'
                   ? 'bg-teal-600 text-white shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:text-white'
               }`}
             >
-              🏪 Chemist / Pharmacist Station
+              🏪 Chemist Station
               <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
                 LIVE
               </span>
@@ -72,7 +83,16 @@ export function App() {
         </div>
       </div>
 
-      {currentPortal === 'chemist' ? (
+      {currentPortal === 'landing' ? (
+        /* Full Landing Page */
+        <LandingPage
+          onLaunchPatientApp={(targetView) => {
+            setCurrentPortal('patient');
+            if (targetView) handleNavigate(targetView);
+          }}
+          onLaunchChemistPortal={() => setCurrentPortal('chemist')}
+        />
+      ) : currentPortal === 'chemist' ? (
         /* Chemist / Pharmacist Station Portal */
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
           <ChemistDashboard onSwitchToPatient={() => setCurrentPortal('patient')} />
@@ -88,7 +108,9 @@ export function App() {
             currentView={currentView}
             onNavigate={handleNavigate}
             onOpenChemistPortal={() => setCurrentPortal('chemist')}
+            onOpenLanding={() => setCurrentPortal('landing')}
           />
+
 
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
             {currentView === 'dashboard' && (

@@ -8,6 +8,7 @@ interface PatientHeaderProps {
   currentView: PatientView;
   onNavigate: (view: PatientView) => void;
   onOpenChemistPortal?: () => void;
+  onOpenLanding?: () => void;
 }
 
 export const PatientHeader: React.FC<PatientHeaderProps> = ({
@@ -15,7 +16,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   currentView,
   onNavigate,
   onOpenChemistPortal,
+  onOpenLanding,
 }) => {
+
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -52,6 +55,14 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+              {onOpenLanding && (
+                <button
+                  onClick={onOpenLanding}
+                  className="px-3 py-1.5 rounded-lg transition-colors cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                >
+                  🌐 Overview
+                </button>
+              )}
               <button
                 onClick={() => onNavigate('dashboard')}
                 className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
@@ -62,6 +73,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               >
                 Dashboard
               </button>
+
               <button
                 onClick={() => onNavigate('upload-prescription')}
                 className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
